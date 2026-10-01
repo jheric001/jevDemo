@@ -39,7 +39,7 @@ curl -X POST https://api.typesafe.ai/v1/systemone \
   }'
 ```
 
-也可以先到 [TypeSafe Playground](https://console.typesafe.ai/playground) 免寫程式試玩。
+也可以先到 [TypeSafe Playground](https://console.typesafe.ai/playground) 免寫程式試玩，或啟動本專案後打開 `/lab`（題型實驗室），直接貼文字試三種題型。
 
 ## 二、Jev 在這個專案裡被用在哪裡
 
@@ -96,7 +96,16 @@ curl -X POST https://api.typesafe.ai/v1/systemone \
 
 首頁助手的「網站搜尋」步驟一律由 Jev 在站內搜尋框打字並送出，不再用搜尋網址樣板，原本的切換勾選框也已移除。第 2 頁以後的翻頁仍由程式直接開網址。
 
-### 5. 對原版核心程式的小修改
+### 5. 題型實驗室（`/lab`，2026-10-01）
+
+貼一段文字、設定幾個 Choice／Noul／Score 問題，一次送給 Jev，結果以長條圖顯示機率與信心值。不用寫程式，也不用登入 TypeSafe 主控台，金鑰只留在本機伺服器。
+
+- 內建 8 題題庫：5 題正常題（客服分流、美業 LINE 訊息、商品評論、社群公關風險、履歷初篩）、3 題陷阱題（算數、日期比較、夾帶指令），多數附變化版。
+- 改一句話再跑，右邊會並排顯示上一次的結果，方便看數字怎麼動。
+- 題目、課堂帶法與實測數字見 [docs/jev-題型Demo題庫-v2.md](docs/jev-題型Demo題庫-v2.md)。
+- 這頁的呼叫不會記進用量面板。
+
+### 6. 對原版核心程式的小修改
 
 - [agent.py](jev_ultrafast/agent.py)：決策與打字可以替換成其他實作，讓比價頁能用 LLM 跑同一個迴圈。
 - [model.py](jev_ultrafast/model.py)：把「組問題」和「解讀答案」拆成兩個函式，Jev 與 LLM 共用；文字模型出錯時，錯誤訊息會帶出供應商回傳的原因。
@@ -113,9 +122,11 @@ curl -X POST https://api.typesafe.ai/v1/systemone \
 | `sites.py` | 網站清單與搜尋網址樣板 |
 | `translate.py` | 中文任務翻譯成英文指令 |
 | `usage.py` | 用量帳本與費用估算 |
-| `static/assistant.*`、`static/compare.*`、`static/zh.*` | 三個中文介面 |
-| `tests/test_assistant.py`、`test_compare.py`、`test_zh.py` | 離線測試 |
+| `static/assistant.*`、`static/compare.*`、`static/zh.*`、`static/lab.*` | 四個中文介面 |
+| `static/lab-items.json` | 題型實驗室的題庫資料 |
+| `tests/test_assistant.py`、`test_compare.py`、`test_zh.py`、`test_lab.py` | 離線測試 |
 | `docs/assistant.md`、`docs/zh-tw.md` | 中文說明 |
+| `docs/jev-題型Demo題庫-v2.md` | 題型實驗室的題目、課堂帶法與實測數字 |
 
 ## 四、安裝與啟動
 
@@ -158,6 +169,7 @@ python3.12 -m venv .venv
 | `/` | 網頁搜尋助手（v2 主要功能） |
 | `/compare` | 三種模式比價 |
 | `/console` | 單步任務台：一句中文任務，直接交給 Jev 操作 |
+| `/lab` | 題型實驗室：貼一段文字，看 Jev 用 Choice、Noul、Score 怎麼回答 |
 | `/en` | 原版英文 inspector，可以看到每一步的元素編號、操作機率與目標機率 |
 
 ## 六、使用前務必知道
