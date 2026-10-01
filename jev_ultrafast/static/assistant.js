@@ -61,7 +61,7 @@ function setPolling(on) {
   pollTimer = on ? setInterval(refreshState, 1000) : null;
 }
 function lockInputs(locked) {
-  for (const id of ["analyze", "url", "task", "max-items", "search-jev"]) $(id).disabled = locked;
+  for (const id of ["analyze", "url", "task", "max-items"]) $(id).disabled = locked;
   document.querySelectorAll("#sites input").forEach((i) => (i.disabled = locked));
 }
 async function perform(fn, note) {
@@ -312,7 +312,6 @@ $("task-form").addEventListener("submit", (e) => {
         url: $("url").value.trim(),
         task_zh: $("task").value.trim(),
         max_items: Number($("max-items").value) || 20,
-        search_mode: $("search-jev").checked ? "jev" : "url",
       }),
     "規劃模型分析中，約需 10 到 30 秒…",
   );

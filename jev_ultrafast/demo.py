@@ -213,7 +213,7 @@ def assistant_command(name, body):
                 site_keys,
                 custom_url,
                 max_items,
-                search_mode="jev" if body.get("search_mode") == "jev" else "url",
+                search_mode="jev",  # 搜尋一律由 Jev 在站內搜尋框打字，不用搜尋網址樣板
                 ledger=LEDGER,
                 reports_root=REPORTS_ROOT,
             )
