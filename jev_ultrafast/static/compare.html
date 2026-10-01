@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="demo-token" content="__TOKEN__" />
+    <title>三種模式比價示範</title>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+      [hidden] { display: none !important; }
+      .card { border: 1px solid rgba(0,0,0,.1); border-radius: 12px; padding: 14px 16px; background: rgba(255,255,255,.65); margin-top: 12px; }
+      .card h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: .06em; opacity: .75; font-weight: 600; }
+      .field label { display: block; font-size: 12px; letter-spacing: .04em; opacity: .7; margin: 0 0 6px; }
+      .field textarea { width: 100%; box-sizing: border-box; font: inherit; line-height: 1.6; padding: 10px 12px; border: 1px solid rgba(0,0,0,.14); border-radius: 10px; background: #fff; }
+      .row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 12px; font-size: 13px; }
+      .row .primary { margin-left: auto; }
+      .row select, .row input[type="number"] { font: inherit; padding: 4px 8px; border: 1px solid rgba(0,0,0,.14); border-radius: 8px; background: #fff; }
+      .row input[type="number"] { width: 60px; }
+      .modes label { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid rgba(0,0,0,.12); border-radius: 999px; background: #fff; cursor: pointer; }
+      .note { font-size: 12px; opacity: .7; margin: 6px 0 0; }
+      .error { color: #a12a2a; font-size: 13px; margin-top: 10px; }
+      table.grid { width: 100%; border-collapse: collapse; font-size: 13px; }
+      table.grid th, table.grid td { text-align: left; padding: 7px 8px; border-top: 1px solid rgba(0,0,0,.08); vertical-align: top; }
+      table.grid th { font-size: 12px; opacity: .65; font-weight: 500; }
+      table.grid td.num, table.grid th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .actor { display: inline-block; min-width: 40px; text-align: center; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+      .a-jev { background: #f2c14e; color: #3a2700; }
+      .a-llm { background: #1f6f6b; color: #fff; }
+      .a-code { background: rgba(0,0,0,.08); color: #333; }
+      .bars { display: grid; gap: 10px; margin: 4px 0 14px; }
+      .bar-row { display: grid; grid-template-columns: 110px 1fr 250px; gap: 12px; align-items: center; font-size: 13px; }
+      .bar { display: flex; height: 22px; border-radius: 6px; overflow: hidden; background: rgba(0,0,0,.04); }
+      .bar span { display: block; height: 100%; }
+      .seg-jev { background: #f2c14e; }
+      .seg-llm { background: #1f6f6b; }
+      .seg-other { background: #b9c7c5; }
+      .legend { display: flex; gap: 16px; font-size: 12px; opacity: .8; margin-bottom: 8px; }
+      .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+      .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 12px; }
+      .run h2 { margin: 0; font-size: 18px; }
+      .run .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+      .run .status { font-size: 12px; opacity: .75; }
+      .run .status.running { color: #2f6b3a; opacity: 1; font-weight: 600; }
+      .run .status.failed { color: #a12a2a; opacity: 1; }
+      .run .meta { font-size: 12px; opacity: .75; margin: 6px 0 8px; line-height: 1.5; }
+      .run tr.running td { background: rgba(47,107,58,.07); }
+      .run tr.failed td { background: rgba(180,40,40,.06); }
+      .run .detail { font-size: 12px; opacity: .7; }
+      .shot { width: 100%; border-radius: 8px; border: 1px solid rgba(0,0,0,.1); margin-top: 10px; display: block; }
+      .report { font-size: 13px; line-height: 1.65; margin-top: 10px; }
+      .report table { border-collapse: collapse; margin: 8px 0; font-size: 12px; width: 100%; }
+      .report th, .report td { border: 1px solid rgba(0,0,0,.12); padding: 5px 7px; text-align: left; }
+      .report h2, .report h3, .report h4 { margin: 10px 0 4px; font-size: 14px; }
+      @media (max-width: 1100px) { .cols { grid-template-columns: 1fr; } .bar-row { grid-template-columns: 90px 1fr; } .bar-row .val { grid-column: 2; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="/" aria-label="首頁" class="brand">Jev <span>三種模式比價示範</span></a>
+      <div class="local"><span class="dot"></span> 本機執行 · <a href="/">網頁搜尋助手</a></div>
+    </header>
+    <main>
+      <section class="intro">
+        <div>
+          <p class="eyebrow">同一個比價任務 × 三種做法</p>
+          <h1>純 LLM、LLM + Jev、純 Jev，誰快、誰省、誰準？</h1>
+          <p>
+            三種模式依序在自己的分頁跑同樣五個步驟。每一步記錄誰在做、總共花多久，
+            以及其中花在 Jev 或 LLM 自己身上的時間；剩下的是等網頁載入與程式處理。
+          </p>
+        </div>
+      </section>
+
+      <form id="form" class="card">
+        <div class="field">
+          <label for="task">比價任務</label>
+          <textarea id="task" rows="3"></textarea>
+          <p class="note">純 Jev 沒有 LLM 幫忙理解任務，請用「」標出要搜尋的關鍵字。</p>
+        </div>
+        <div class="row">
+          <label>網站
+            <select id="site">
+              <option value="momo">momo 購物網</option>
+              <option value="pchome">PChome 24h</option>
+              <option value="coupang">酷澎</option>
+            </select>
+          </label>
+          <label>最多挑 <input id="max-items" type="number" min="1" max="10" value="5" /> 筆</label>
+          <span class="modes" id="modes"></span>
+          <button type="button" id="stop" hidden>停止</button>
+          <button type="submit" class="primary" id="start">開始比較</button>
+        </div>
+        <p id="error" class="error" hidden></p>
+      </form>
+
+      <section class="card">
+        <h3>誰負責哪一步</h3>
+        <table class="grid" id="matrix"></table>
+      </section>
+
+      <section class="card" id="summary-card" hidden>
+        <h3>比較結果 <span id="phase"></span></h3>
+        <div class="legend"><span><i class="seg-jev"></i>Jev 自己</span><span><i class="seg-llm"></i>LLM 自己</span><span><i class="seg-other"></i>其他：等網頁、捲動、程式</span></div>
+        <div class="bars" id="bars"></div>
+        <div style="overflow-x:auto"><table class="grid" id="summary" style="min-width:860px"></table></div>
+        <p class="note">費用以美元計：Jev 依輸入 token 乘單價計算，LLM 取 OpenRouter 回報的實際費用。三種模式依序執行，不會互搶瀏覽器或網路。</p>
+      </section>
+
+      <section class="cols" id="runs"></section>
+    </main>
+    <script src="/compare.js"></script>
+  </body>
+</html>

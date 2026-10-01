@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="demo-token" content="__TOKEN__" />
+    <title>Jev 網頁搜尋助手</title>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+      [hidden] { display: none !important; }
+      .field { margin-top: 10px; }
+      .field label, .field .label { display: block; font-size: 12px; letter-spacing: .04em; opacity: .7; margin: 0 0 6px; }
+      .field textarea, .field input[type="url"], .field input[type="text"] { width: 100%; box-sizing: border-box; font: inherit; line-height: 1.6; padding: 10px 12px; border: 1px solid rgba(0,0,0,.14); border-radius: 10px; background: #fff; }
+      .sites { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 13px; }
+      .sites label { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border: 1px solid rgba(0,0,0,.12); border-radius: 999px; background: #fff; cursor: pointer; }
+      .sites label.on { border-color: #2f6b3a; background: rgba(47,107,58,.08); }
+      .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+      .row .primary { margin-left: auto; }
+      .row input[type="number"] { width: 70px; font: inherit; padding: 4px 8px; border: 1px solid rgba(0,0,0,.14); border-radius: 8px; }
+      .note { font-size: 12px; opacity: .7; }
+      .card { border: 1px solid rgba(0,0,0,.1); border-radius: 12px; padding: 14px 16px; background: rgba(255,255,255,.65); margin-top: 12px; }
+      .card h3 { margin: 0 0 10px; font-size: 12px; letter-spacing: .06em; opacity: .75; font-weight: 600; }
+      .plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 16px; font-size: 13px; }
+      .plan-grid b { display: block; opacity: .6; font-weight: 500; font-size: 12px; }
+      .plan-edit { display: grid; grid-template-columns: 1fr auto; gap: 12px; margin-top: 12px; align-items: end; }
+      .plan-edit textarea { width: 100%; box-sizing: border-box; font: inherit; padding: 8px 10px; border: 1px solid rgba(0,0,0,.14); border-radius: 8px; }
+      .steps { list-style: none; margin: 12px 0 0; padding: 0; }
+      .steps li { display: flex; gap: 10px; padding: 8px 0; border-top: 1px solid rgba(0,0,0,.06); font-size: 13px; align-items: flex-start; }
+      .steps .badge { flex: none; min-width: 64px; text-align: center; font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.06); }
+      .steps li.running .badge { background: #2f6b3a; color: #fff; }
+      .steps li.done .badge { background: rgba(47,107,58,.15); color: #2f6b3a; }
+      .steps li.failed .badge { background: rgba(180,40,40,.12); color: #a12a2a; }
+      .split { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; margin-top: 16px; }
+      .log { max-height: 460px; overflow: auto; font-size: 13px; line-height: 1.55; }
+      .log div { padding: 4px 0; border-top: 1px solid rgba(0,0,0,.05); display: grid; grid-template-columns: 62px 1fr; gap: 8px; }
+      .log time { opacity: .5; font-variant-numeric: tabular-nums; }
+      .log .step { font-weight: 600; }
+      .log .ok { color: #2f6b3a; }
+      .log .warn { color: #8a6100; }
+      .log .error { color: #a12a2a; }
+      .log .detail { opacity: .7; }
+      .shot { width: 100%; border-radius: 10px; border: 1px solid rgba(0,0,0,.1); background: #fff; display: block; }
+      table.grid { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+      table.grid th, table.grid td { text-align: left; padding: 8px 8px; border-top: 1px solid rgba(0,0,0,.08); vertical-align: top; }
+      table.grid th { font-size: 12px; opacity: .65; font-weight: 500; }
+      table.grid td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+      table.grid .no { color: #a12a2a; }
+      table.grid .yes { color: #2f6b3a; }
+      .report { font-size: 14px; line-height: 1.7; }
+      .report table { border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+      .report th, .report td { border: 1px solid rgba(0,0,0,.12); padding: 6px 10px; text-align: left; }
+      .report h1, .report h2, .report h3 { margin: 14px 0 6px; }
+      .usage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 12px; }
+      .usage-grid dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 13px; align-items: center; }
+      .usage-grid dt { opacity: .6; white-space: nowrap; }
+      .usage-grid dd { margin: 0; font-variant-numeric: tabular-nums; }
+      .usage-grid input { width: 110px; font: inherit; padding: 4px 8px; border: 1px solid rgba(0,0,0,.14); border-radius: 8px; }
+      @media (max-width: 860px) { .split, .plan-edit { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="/" aria-label="首頁" class="brand">Jev <span>網頁搜尋助手</span></a>
+      <div class="local"><span class="dot"></span> 本機執行 · <a href="/console">單步任務台</a> · <a href="/compare">三種模式比價</a></div>
+    </header>
+    <main>
+      <section class="intro">
+        <div>
+          <p class="eyebrow">規劃 → 多關鍵字跨站搜尋 → 收錄 → 報告存檔</p>
+          <h1>用中文交代任務，助手先想清楚再動手。</h1>
+          <p>
+            規劃模型讀懂任務、產生關鍵字變體、拆成步驟；程式在每個網站逐頁搜尋並學習商品的正式名稱再搜一輪；
+            判斷模型挑出符合條件的頁面、抽出欄位、寫報告；報告自動存成 Markdown 方便日後查找。
+          </p>
+        </div>
+        <div class="model-tag">規劃 + Jev + 判斷 <span>三層分工</span></div>
+      </section>
+      <form id="task-form">
+        <div class="field">
+          <span class="label">要搜尋的網站（可多選）</span>
+          <div class="sites" id="sites"></div>
+        </div>
+        <div class="field">
+          <label for="url">自訂網址（選填，會用 Jev 在該站的搜尋框輸入關鍵字）</label>
+          <input id="url" name="url" type="url" placeholder="https://" />
+        </div>
+        <div class="field">
+          <label for="task">中文任務（描述要找什麼、篩選條件、要收錄什麼、最後要什麼整理）</label>
+          <textarea id="task" name="task" rows="5"></textarea>
+        </div>
+        <div class="row">
+          <label class="note" for="max-items">最多收錄</label>
+          <input id="max-items" type="number" min="1" max="50" value="20" />
+          <span class="note">筆</span>
+          <label class="overlay-control note"><input id="search-jev" type="checkbox" /> 搜尋動作交給 Jev 打字（較慢，示範用）</label>
+          <span class="note" id="plan-note">先按「分析任務」看規劃，確認後再執行。</span>
+          <button type="submit" id="analyze" class="primary">分析任務 <span>↗</span></button>
+        </div>
+      </form>
+      <div id="error" role="alert" hidden></div>
+
+      <section class="card" id="plan-card" hidden>
+        <h3>任務規劃</h3>
+        <div class="plan-grid">
+          <div><b>意圖</b><span id="p-intent">—</span></div>
+          <div><b>網站</b><span id="p-sites">—</span></div>
+          <div><b>收錄欄位</b><span id="p-collection">—</span></div>
+          <div><b>篩選條件</b><span id="p-criteria">—</span></div>
+          <div><b>規劃模型</b><span id="p-model">—</span></div>
+        </div>
+        <p id="p-summary" style="margin:12px 0 0;font-size:14px"></p>
+        <div class="plan-edit">
+          <div>
+            <span class="note">關鍵字（每行一組，可增刪；執行中還會從結果學習新關鍵字）</span>
+            <textarea id="p-keywords" rows="3"></textarea>
+          </div>
+          <div>
+            <span class="note">每組最多翻</span>
+            <input id="p-pages" type="number" min="1" max="5" value="2" style="width:60px;font:inherit;padding:4px 8px;border:1px solid rgba(0,0,0,.14);border-radius:8px" />
+            <span class="note">頁</span>
+          </div>
+        </div>
+        <ol class="steps" id="p-steps"></ol>
+        <div class="row">
+          <span class="note" id="run-status">尚未執行</span>
+          <button type="button" id="stop" hidden>停止</button>
+          <button type="button" id="run" class="primary">開始執行 <span>↗</span></button>
+        </div>
+      </section>
+
+      <section class="split" id="live" hidden>
+        <div class="card">
+          <h3>即時畫面 <span class="note" id="live-url"></span></h3>
+          <img id="shot" class="shot" alt="受控瀏覽器的即時截圖" />
+          <p class="note" id="jev-line"></p>
+          <div id="searches-wrap" hidden>
+            <h3 style="margin-top:12px">搜尋過程</h3>
+            <table class="grid" id="searches"></table>
+          </div>
+        </div>
+        <div class="card">
+          <h3>執行記錄</h3>
+          <div class="log" id="log"></div>
+        </div>
+      </section>
+
+      <section class="card" id="records-card" hidden>
+        <div class="trace-heading" style="margin:0">
+          <h3 style="margin:0">收錄清單 <span class="note" id="records-count"></span></h3>
+          <div>
+            <button type="button" id="export-csv">匯出 CSV</button>
+            <button type="button" id="export-json">匯出 JSON</button>
+          </div>
+        </div>
+        <p class="note" id="records-dir"></p>
+        <div style="overflow:auto"><table class="grid" id="records"></table></div>
+      </section>
+
+      <section class="card" id="report-card" hidden>
+        <div class="trace-heading" style="margin:0">
+          <h3 style="margin:0">報告 <span class="note" id="report-file"></span></h3>
+        </div>
+        <div class="report" id="report"></div>
+      </section>
+
+      <section class="card" id="history-card">
+        <div class="trace-heading" style="margin:0">
+          <h3 style="margin:0">歷史報告 <span class="note" id="history-dir"></span></h3>
+          <button type="button" id="history-refresh">重新整理</button>
+        </div>
+        <table class="grid" id="history"></table>
+      </section>
+
+      <section class="card" id="usage-card">
+        <div class="trace-heading" style="margin:0">
+          <h3 style="margin:0">用量與額度 <span class="note" id="usage-note">載入中…</span></h3>
+          <button type="button" id="usage-refresh">重新查詢餘額</button>
+        </div>
+        <div class="usage-grid">
+          <div>
+            <h3>本次任務</h3>
+            <dl>
+              <dt>Jev 決策</dt><dd id="u-jev">—</dd>
+              <dt>Jev 費用</dt><dd id="u-jev-cost">—</dd>
+              <dt>文字模型</dt><dd id="u-helper">—</dd>
+              <dt>規劃模型</dt><dd id="u-planner">—</dd>
+              <dt>判斷模型</dt><dd id="u-judge">—</dd>
+              <dt>合計 / 耗時</dt><dd id="u-total">—</dd>
+            </dl>
+          </div>
+          <div>
+            <h3>Jev 累計（本機估算）</h3>
+            <dl>
+              <dt>請求數</dt><dd id="u-all-jev">—</dd>
+              <dt>估算費用</dt><dd id="u-all-jev-cost">—</dd>
+              <dt>預付金額</dt><dd><input id="prepaid" type="number" min="0" step="1" placeholder="美元" /></dd>
+              <dt>估算剩餘</dt><dd id="u-all-remaining">—</dd>
+              <dt>模型費用累計</dt><dd id="u-all-llm">—</dd>
+            </dl>
+            <p class="note">TypeSafe 沒有提供餘額查詢，剩餘額度以預付金額扣掉本機累計估算；正確數字請到 <a href="https://console.typesafe.ai" target="_blank" rel="noopener">TypeSafe 主控台</a>查看。</p>
+          </div>
+          <div>
+            <h3>OpenRouter 金鑰（即時）</h3>
+            <dl>
+              <dt>金鑰上限</dt><dd id="u-or-limit">—</dd>
+              <dt>剩餘</dt><dd id="u-or-remaining">—</dd>
+              <dt>已用</dt><dd id="u-or-key-used">—</dd>
+            </dl>
+            <p class="note" id="u-models"></p>
+          </div>
+        </div>
+        <h3 style="margin-top:16px">每次任務花費</h3>
+        <div style="overflow:auto"><table class="grid" id="cost-history"></table></div>
+      </section>
+      <footer>
+        <span>Jev 網頁搜尋助手 · 本機執行</span><span id="collection-path"></span>
+      </footer>
+    </main>
+    <script type="module" src="/assistant.js"></script>
+  </body>
+</html>
