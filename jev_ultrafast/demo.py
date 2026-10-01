@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from . import archive, compare
+from . import archive, compare, model
 from .agent import Agent
 from .assistant import Session
 from .questions import MAX_STEPS
@@ -45,7 +45,11 @@ FILES = {
     "/fixture.html": ("fixture.html", "text/html"),
     "/compare": ("compare.html", "text/html"),
     "/compare.js": ("compare.js", "text/javascript"),
+    "/lab": ("lab.html", "text/html"),
+    "/lab.js": ("lab.js", "text/javascript"),
+    "/lab-items.json": ("lab-items.json", "application/json"),
 }
+LAB_TYPES = {"choice", "noul", "score"}
 
 
 def load_environment():
@@ -278,6 +282,32 @@ def compare_state():
     return COMPARE.snapshot() if COMPARE else {"phase": "idle", "runs": []}
 
 
+def lab_ask(body):
+    """Question-type lab: forward one state and its typed questions to Jev unchanged."""
+    state = str(body.get("state", "")).strip()
+    questions = body.get("questions")
+    if not state or len(state) > 4000:
+        raise ValueError("請輸入 1 至 4,000 字的文字")
+    if not isinstance(questions, dict) or not 0 < len(questions) <= 20:
+        raise ValueError("問題要是一個 JSON 物件，1 至 20 題")
+    for qid, question in questions.items():
+        if not isinstance(question, dict) or question.get("type") not in LAB_TYPES or not question.get("instructions"):
+            raise ValueError(f"問題「{qid}」需要 type（choice、noul 或 score）和 instructions")
+    if not os.environ.get("TYPESAFE_API_KEY"):
+        raise ValueError("缺少 TYPESAFE_API_KEY，請在 .env 設定")
+    body = {"state": state, "model": os.environ.get("TYPESAFE_MODEL", "jev-latest"), "questions": questions}
+    started = time.perf_counter()
+    result = model.post_json("https://api.typesafe.ai/v1/systemone", os.environ["TYPESAFE_API_KEY"], body)
+    usage = result.get("usage") or {}
+    return {
+        "model": result.get("model"),
+        "answers": result.get("answers") or {},
+        "usage": usage,
+        "elapsed_ms": round((time.perf_counter() - started) * 1000),
+        "cost_usd": usage.get("input_tokens", 0) * JEV_USD_PER_MTOK / 1_000_000,
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     def send(self, status, content, mime="application/json"):
         content = content if isinstance(content, bytes) else content.encode()
@@ -356,6 +386,14 @@ class Handler(BaseHTTPRequestHandler):
                 self.send(400, json.dumps({"error": str(error)}))
             except Exception:
                 self.send(500, json.dumps({"error": "本機伺服器發生錯誤，請重新開始比較"}))
+            return
+        if name == "lab/ask":
+            try:
+                self.send(200, json.dumps(lab_ask(self.read_body())))
+            except (ValueError, RuntimeError, TimeoutError) as error:
+                self.send(400, json.dumps({"error": str(error)}))
+            except Exception:
+                self.send(500, json.dumps({"error": "本機伺服器發生錯誤，請再試一次"}))
             return
         if not LOCK.acquire(blocking=False):
             return self.send(409, json.dumps({"error": "上一個步驟還在執行中，請稍候再試"}))
